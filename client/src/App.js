@@ -14,7 +14,7 @@ function App() {
   const [isMining, setIsMining] = React.useState(false);
   const [isMinedSuccessfully, setIsMinedSuccessfully] = React.useState(false);
   const [isMiningError, setIsMiningError] = React.useState(false);
-  const [finishedMiningMessage, setFinishedMiningMessage] = React.useState("");
+  const [openSeaUrl, setOpenSeaUrl] = React.useState("");
 
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window;
@@ -52,22 +52,20 @@ function App() {
         connectedContract.on(
           "NewBreakfastCollectionNFTMinted",
           (from, tokenId) => {
-            console.log(from, tokenId.toNumber());
             setIsMining(false);
             setIsMinedSuccessfully(true);
-            setFinishedMiningMessage(
-              `Here's your NFT on OpenSea: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
+            setOpenSeaUrl(
+              `https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
             );
           }
         );
       } else {
-        console.log("Ethereum object doesn't exist!");
+        console.error("Ethereum object doesn't exist!");
       }
     } catch (error) {
       setIsMining(false);
       setIsMinedSuccessfully(false);
       setIsMiningError(true);
-      setFinishedMiningMessage("There was an error mining your transaction.");
     }
   };
 
@@ -83,7 +81,9 @@ function App() {
       const accounts = await ethereum.request({
         method: "eth_requestAccounts",
       });
+
       setCurrentAccount(accounts[0]);
+      setupEventListener();
     } catch (error) {
       console.error(error);
     }
@@ -105,7 +105,7 @@ function App() {
         setIsMining(true);
         setIsMiningError(false);
         setIsMinedSuccessfully(false);
-        setFinishedMiningMessage("");
+        setOpenSeaUrl("");
 
         let nftTxn = await connectedContract.makeNFT();
 
@@ -126,8 +126,6 @@ function App() {
     }
   };
 
-  console.log("Account connected:", currentAccount);
-
   return (
     <>
       <GlobalStyles />
@@ -142,14 +140,22 @@ function App() {
         </WalletAddress>
         <h1>The Breakfast Collection NFTs</h1>
         <p>Enjoy some syrupy, breakfasty goodness in your life</p>
-        {isMiningError || (isMinedSuccessfully && !isMining) ? (
-          <p>{finishedMiningMessage}</p>
-        ) : null}
         <button
           onClick={currentAccount ? askContractToMintNFT : connectToWallet}
         >
           {isConnected && currentAccount ? "Mint Token" : "Connect Wallet"}
         </button>
+        {(isMiningError || isMinedSuccessfully) && !isMining ? (
+          <NewTransaction>
+            {isMinedSuccessfully ? (
+              <a href={openSeaUrl}>
+                CONGRATS! Here's your new NFT on OpenSea 🎉
+              </a>
+            ) : (
+              <p>There was an error mining your transaction. 😞</p>
+            )}
+          </NewTransaction>
+        ) : null}
         <a href={TWITTER_URL}>{`Built by ${TWITTER_HANDLE}`}</a>
       </RootStyles>
     </>
@@ -201,6 +207,21 @@ const WalletAddress = styled.div`
     color: white;
     justify-content: center;
     padding: 6px 10px;
+  }
+`;
+
+const NewTransaction = styled.div`
+  background: white;
+  border-radius: 15px;
+  margin-top: 30px;
+  padding: 40px 5%;
+  width: 80%;
+  -webkit-box-shadow: 0px 6px 26px -10px rgba(0, 0, 0, 0.44);
+  -moz-box-shadow: 0px 6px 26px -10px rgba(0, 0, 0, 0.44);
+  box-shadow: 0px 6px 26px -10px rgba(0, 0, 0, 0.44);
+
+  > a {
+    color: black;
   }
 `;
 
