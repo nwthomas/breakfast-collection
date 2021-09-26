@@ -126,6 +126,13 @@ function App() {
     }
   };
 
+  let buttonLabel = "Connect Wallet";
+  if (isMining) {
+    buttonLabel = "⛏";
+  } else if (isConnected && currentAccount) {
+    buttonLabel = "Mint Token";
+  }
+
   return (
     <>
       <GlobalStyles />
@@ -138,12 +145,13 @@ function App() {
             </div>
           ) : null}
         </WalletAddress>
-        <h1>The Breakfast Collection NFTs</h1>
+        <h1>Breakfast Collection NFTs</h1>
         <p>Enjoy some syrupy, breakfasty goodness in your life</p>
         <button
+          disabled={isMining}
           onClick={currentAccount ? askContractToMintNFT : connectToWallet}
         >
-          {isConnected && currentAccount ? "Mint Token" : "Connect Wallet"}
+          {buttonLabel}
         </button>
         {(isMiningError || isMinedSuccessfully) && !isMining ? (
           <NewTransaction>
