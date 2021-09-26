@@ -4,13 +4,17 @@ import GlobalStyles from "./styles";
 import { ethers } from "ethers";
 import breakfastCollectionNft from "./ABIs/BreakfastCollectionNFT.json";
 
-const CONTRACT_ADDRESS = "0xA4370BCc88528f1296BC919Ac5B89374E45585AF";
+const CONTRACT_ADDRESS = "0xEBd3f51DfBDdC0005a1936Dd337f95FC9989C2b3";
 const TWITTER_HANDLE = "nwthomas_";
 const TWITTER_URL = `https://www.twitter.com/${TWITTER_HANDLE}`;
 
 function App() {
   const [isConnected, setIsConnected] = React.useState(false);
   const [currentAccount, setCurrentAccount] = React.useState("");
+  const [isMining, setIsMining] = React.useState(false);
+  const [isMinedSuccessfully, setIsMinedSuccessfully] = React.useState(false);
+  const [isMiningError, setIsMiningError] = React.useState(false);
+  const [finishedMiningMessage, setFinishedMiningMessage] = React.useState("");
 
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window;
@@ -22,6 +26,7 @@ function App() {
       if (accounts.length > 0) {
         const firstAccount = accounts[0];
         setCurrentAccount(firstAccount);
+        setupEventListener();
       }
     }
   };
@@ -29,6 +34,42 @@ function App() {
   React.useEffect(() => {
     checkIfWalletIsConnected();
   }, []);
+
+  const setupEventListener = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        // Same stuff again
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          breakfastCollectionNft.abi,
+          signer
+        );
+
+        connectedContract.on(
+          "NewBreakfastCollectionNFTMinted",
+          (from, tokenId) => {
+            console.log(from, tokenId.toNumber());
+            setIsMining(false);
+            setIsMinedSuccessfully(true);
+            setFinishedMiningMessage(
+              `Here's your NFT on OpenSea: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
+            );
+          }
+        );
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      setIsMining(false);
+      setIsMinedSuccessfully(false);
+      setIsMiningError(true);
+      setFinishedMiningMessage("There was an error mining your transaction.");
+    }
+  };
 
   const connectToWallet = async () => {
     try {
@@ -61,15 +102,14 @@ function App() {
           signer
         );
 
-        console.log("Going to pop wallet now to pay gas...");
+        setIsMining(true);
+        setIsMiningError(false);
+        setIsMinedSuccessfully(false);
+        setFinishedMiningMessage("");
+
         let nftTxn = await connectedContract.makeNFT();
 
-        console.log("Mining... please wait.");
         await nftTxn.wait();
-
-        console.log(
-          `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`
-        );
       } else {
         alert("Please get MetaMask!");
       }
@@ -102,6 +142,9 @@ function App() {
         </WalletAddress>
         <h1>The Breakfast Collection NFTs</h1>
         <p>Enjoy some syrupy, breakfasty goodness in your life</p>
+        {isMiningError || (isMinedSuccessfully && !isMining) ? (
+          <p>{finishedMiningMessage}</p>
+        ) : null}
         <button
           onClick={currentAccount ? askContractToMintNFT : connectToWallet}
         >
