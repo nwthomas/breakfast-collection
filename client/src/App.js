@@ -16,7 +16,7 @@ function App() {
   const [isMiningError, setIsMiningError] = React.useState(false);
   const [openSeaUrl, setOpenSeaUrl] = React.useState("");
 
-  const checkIfWalletIsConnected = async () => {
+  const checkIfWalletIsConnected = React.useCallback(async () => {
     const { ethereum } = window;
 
     if (ethereum) {
@@ -29,11 +29,11 @@ function App() {
         setupEventListener();
       }
     }
-  };
+  }, []);
 
   React.useEffect(() => {
     checkIfWalletIsConnected();
-  }, []);
+  }, [checkIfWalletIsConnected]);
 
   const setupEventListener = async () => {
     try {
