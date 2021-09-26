@@ -1,7 +1,10 @@
 import * as React from "react";
 import styled from "styled-components";
 import GlobalStyles from "./styles";
+import { ethers } from "ethers";
+import breakfastCollectionNft from "./ABIs/BreakfastCollectionNFT.json";
 
+const CONTRACT_ADDRESS = "0xA4370BCc88528f1296BC919Ac5B89374E45585AF";
 const TWITTER_HANDLE = "nwthomas_";
 const TWITTER_URL = `https://www.twitter.com/${TWITTER_HANDLE}`;
 
@@ -45,6 +48,36 @@ function App() {
     }
   };
 
+  const askContractToMintNFT = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          breakfastCollectionNft.abi,
+          signer
+        );
+
+        console.log("Going to pop wallet now to pay gas...");
+        let nftTxn = await connectedContract.makeNFT();
+
+        console.log("Mining... please wait.");
+        await nftTxn.wait();
+
+        console.log(
+          `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`
+        );
+      } else {
+        alert("Please get MetaMask!");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const renderCurrentAccount = () => {
     if (currentAccount) {
       const start = currentAccount.slice(0, 5);
@@ -69,7 +102,9 @@ function App() {
         </WalletAddress>
         <h1>The Breakfast Collection NFTs</h1>
         <p>Enjoy some syrupy, breakfasty goodness in your life</p>
-        <button onClick={currentAccount ? undefined : connectToWallet}>
+        <button
+          onClick={currentAccount ? askContractToMintNFT : connectToWallet}
+        >
           {isConnected && currentAccount ? "Mint Token" : "Connect Wallet"}
         </button>
         <a href={TWITTER_URL}>{`Built by ${TWITTER_HANDLE}`}</a>
